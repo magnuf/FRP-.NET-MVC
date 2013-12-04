@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+
+        <title>FRP, .NET-MVC</title>
+
+        <link rel="stylesheet" href="./css/reveal.min.css">
+        <link rel="stylesheet" href="./css/theme/night.css">
+        <link rel="stylesheet" href="./css/main.css">
+        <link rel="stylesheet" href="./css/vote-example.css">
+        <link rel="stylesheet" href="./css/monokai-sublime.css">
+
+
+        <script type="text/javascript" src="js/jquery.js"></script>
+        <script type="text/javascript" src="js/jQuery.reduce.js"></script>
+        <script type="text/javascript" src="js/bacon.js"></script>
+        <script type="text/javascript" src="js/moment.js"></script>
+
+        <style> .notgood{color: red;} label {display: block;} input {font-size: 20px; border:none;} button {border:none;} .skjult{display: none;} .infoboks p{color: red}</style>
+
+        <script type="text/javascript">
+            var testRegex = function(pattern) {
+                return function(value) {
+                    if(!value) return true;
+                    if(!pattern) return true;
+                    return new RegExp(pattern, "i").test(value);
+                };
+            };
+
+            var testDato = function(maksdato) {
+                return function(value) {
+                    if(!value) return true;
+                    if(!maksdato) return true;
+                    if(!moment(value, "DD-MM-YYYY").isValid()) return true;
+                    return moment(maksdato, "DD-MM-YYYY").isAfter(moment(value));
+                };
+            };
+
+            var propertyFromInput = function(field, events) {
+                var filterTab = function(e){
+                    if(e.keyCode === 9) { return false; }
+                    return true;
+                }
+
+                var value = function(event) {
+                    return field.val();
+                };
+
+                var eventSources = $.reduce(["keyup", " blur"], function(acc, event) {
+                    if(!acc) return Bacon.fromEventTarget(field, event).filter(filterTab);
+                    return acc.merge(Bacon.fromEventTarget(field, event).filter(filterTab));
+                });
+
+                return eventSources.map(value).toProperty(value());
+            };
+
+            var filterFunction = function() {
+                for (var property in $(this).data()) {
+                    if (property.indexOf('val') == 0) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            var settSammenValidates = function(liste){
+                return $.reduce(liste, function(acc, elem) {
+                    return acc.and(elem);
+                }, Bacon.constant(true));
+            };
+
+            var settOppFelter = function(felter){
+                var that = this;
+                var validFunksjoner = [];
+                var settOppFelt = function(index, input) {
+                    input = $(input);
+                    var property = that.propertyFromInput(input);
+
+                    var requiredText = input.attr("data-val-required");
+                    var regex = input.attr("data-val-regex-pattern");
+                    var regexText = input.attr("data-val-regex");
+                    var oldEnoughText = input.attr("data-val-oldenough");
+                    var oldEnoughDate = input.attr("data-val-oldenough-maxdate");
+
+                    var boolvalid = property.map(function(value){if(requiredText){return !!value} return true;});
+                    var regexvalid = property.map(that.testRegex(regex));
+                    var oldEnoughvalid = property.map(that.testDato(oldEnoughDate));
+                    validFunksjoner.push(boolvalid);
+                    validFunksjoner.push(regexvalid);
+                    validFunksjoner.push(oldEnoughvalid);
+
+                    boolvalid = boolvalid.skip(1).debounce(500);
+                    regexvalid = regexvalid.skip(1).debounce(500);
+                    oldEnoughvalid = oldEnoughvalid.skip(1).debounce(500);
+
+                    if(requiredText) {
+                        var requiredfeltnavn = input[0].name + "_feil_required";
+                        that.settInnError(input, requiredfeltnavn, requiredText);
+                        boolvalid.assign(that.$("#"+requiredfeltnavn), "toggleClass", "skjult");
+                    }
+                    if(regex){
+                        var regexfeltnavn = input[0].name + "_feil_regex";
+                        that.settInnError(input, regexfeltnavn, regexText);
+                        boolvalid.not().or(regexvalid).assign(that.$("#"+regexfeltnavn), "toggleClass", "skjult");
+                    }
+                    if(oldEnoughText) {
+                        var oldEnoughfeltnavn = input[0].name + "_feil_oldenough";
+                        that.settInnError(input, oldEnoughfeltnavn, oldEnoughText);
+                        oldEnoughvalid.assign(that.$("#"+oldEnoughfeltnavn), "toggleClass", "skjult");
+                    }
+                }
+
+                felter.each(settOppFelt);
+
+                return validFunksjoner;
+            };
+
+            var settInnError = function(felt, feltnavn, tekst) {
+                felt.after("<div class='infoboks infoboks-liten infoboks-error felt-feil skjult' id='"+feltnavn+"'><span></span><p>"+tekst+"</p></div>");
+            };
+
+            var run = function(inputFelter){
+                var validFuncs = settOppFelter(inputFelter);
+
+                var allValid = settSammenValidates(validFuncs);
+                allValid.not().assign($("input[type=submit]"), "toggleClass", "notgood");
+                allValid.not().assign($("input[type=submit]"), "attr", "disabled");
+
+                $("button").attr("disabled", "disabled");
+            };
+        </script>
+    </head>
+
+    <body>
+        <div class="reveal">
+            <div class="slides">
+                <section>
+                    <h2>Klientsidevalidering med bacon.js og ASP.NET MVC</h2>
+                    <h3>Kombinér hipt og kult med traust og solid</h3>
+                    <p>BEKK Trondheim minikonferanse 6/12/13</p>
+                    <p>Magnus Sellereite Fjell</p>
+                </section>
+
+                <section>
+                    <h2>Agenda</h2>
+                    <ol>
+                        <li class="fragment">Teoretisk introduksjon</li>
+                        <li class="fragment">FRP i front-end</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h2>Modellen din</h2>
+                    <div class="code">
+                            <pre class="fragment" data-fragment-index="1"><code>public string Navn { get; set; }</code></pre>
+                            <pre class="fragment" data-fragment-index="2"><code>[Required(ErrorMessage = "Adresse mangler")]
+public string Adresse { get; set; }</code></pre>
+                            <pre class="fragment" data-fragment-index="3"><code>[Required(ErrorMessage = "Postnummer mangler")]
+[RegularExpression("^\\d{4}$",
+ ErrorMessage = "Sikker på at dette er rett postnummer?")]
+public string Postnummer { get; set; }</code></pre>
+                            <pre class="fragment" data-fragment-index="4"><code>[Required(ErrorMessage = "Poststed mangler")]
+[RegularExpression("^[A-Za-zÆØÅæøå\\s]+$",
+ ErrorMessage = "Tror det er noe feil med poststedet du har oppgitt")]
+public string Poststed { get; set; }</code></pre>
+                        </div>
+                </section>
+
+                <section>
+                    <h2>HTMLen</h2>
+                    <div class="code">
+                        <pre class="fragment" data-fragment-index="1"><code><input name="Navn"></code></pre>
+                        <pre class="fragment" data-fragment-index="2"><code><input data-val-required="Adresse mangler" name="Adresse"></code></pre>
+                        <pre class="fragment" data-fragment-index="3"><code>&lt;input data-val-regex="Sikker på at dette er rett postnummer?"
+data-val-regex-pattern="^\d{4}$" data-val-required="Postnummer mangler"
+name="Postnummer"></code></pre>
+                        <pre class="fragment" data-fragment-index="4"><code>&lt;input
+data-val-regex="Tror det er noe feil med poststedet du har oppgitt"
+data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler"
+name="Poststed"></code></pre>
+                    </div>
+                </section>
+
+
+                <section>
+                    <section><h2>In comes bacon.js</h2></section>
+                    <section>
+                        <h2>Hent ut informasjonen</h2>
+                                <pre class="fragment"><code>var requiredText = input.attr("data-val-required");
+var regex = input.attr("data-val-regex-pattern");
+var regexText = input.attr("data-val-regex");</code></pre>
+                    </section>
+                    <section>
+                        <h2>Bestem om valideringa er oppfylt</h2>
+                        <pre class="fragment" data-fragment-index="1"><code>function(value) {
+    if(requiredText){
+        return !!value
+    }
+    return true;
+}</code></pre>
+                        <pre class="fragment" data-fragment-index="2"><code>function(value) {
+    if(!value) return true;
+    if(!pattern) return true;
+    return new RegExp(pattern, "i").test(value);
+};</code></pre>
+                    </section>
+                </section>
+
+                <section class="eksempel1">
+                    <h2>Eksempel</h2>
+                    <label for="Navn">Navn</label>
+                    <input id="Navn" name="Navn" type="text">
+                    <label for="Adresse">Adresse</label>
+                    <input data-val="true" data-val-required="Adresse mangler" id="Adresse" name="Adresse" type="text">
+                    <label for="Postnummer">Postnummer</label>
+                    <input data-val="true" data-val-regex="Sikker på at dette er rett postnummer?" data-val-regex-pattern="^\d{4}$" data-val-required="Postnummer mangler" id="Postnummer" name="Postnummer" type="text">
+                    <label for="Poststed">Poststed</label>
+                    <input data-val="true" data-val-regex="Tror det er noe feil med poststedet du har oppgitt" data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler" id="Poststed" name="Poststed" type="text"><br/>
+                    <input type="submit" value="Alt er godkjent"/><br/>
+                    <button onclick="run($('.eksempel1 input').filter(filterFunction));">Slå på validering</button><br/>
+                </section>
+
+                <section>
+                    <h2>Custom attribute</h2>
+
+                    <div class="code">
+                        <pre class="fragment" data-fragment-index="1"><code>[OldEnough(ErrorMessage = "Innflytter må være minst 16 år gammel")]
+public DateTime InnflytterFodselsdato { get; set; }</code></pre>
+                        <pre class="fragment" data-fragment-index="2"><hr/></pre>
+                        <pre class="fragment" data-fragment-index="2"><code>var d = Convert.ToDateTime(value);
+return d <= MaxDate;</code></pre>
+                        <pre class="fragment" data-fragment-index="3"><hr/></pre>
+                        <pre class="fragment" data-fragment-index="3"><code>var rule  = new ModelClientValidationRule
+    {
+        ValidationType = "oldenough",
+        ErrorMessage = ErrorMessage
+    };
+rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
+                        <pre class="fragment" data-fragment-index="4"><hr/></pre>
+                        <pre class="fragment" data-fragment-index="4"><code>function(value) {
+    if(!value) return true;
+    if(!maksdato) return true;
+    f(!moment(value, "DD-MM-YYYY").isValid()) return true;
+    return moment(maksdato, "DD-MM-YYYY").isAfter(moment(value));
+};</code></pre>
+                    </div>
+                </section>
+
+                <section class="eksempel2">
+                    <label for="InnflytterFodselsdato">Fødselsdato</label>
+                    <input value="" data-val-oldenough="Innflytter må være minst 16 år gammel" data-val-oldenough-maxdate="04.12.1997" name="InnflytterFodselsdato" type="text"><br/>
+                    <input type="submit" value="Alt er godkjent"/><br/>
+                    <button onclick="run($('.eksempel2 input').filter(filterFunction));">Slå på validering</button>
+                </section>
+
+                <section>
+                    <h2>Custom attribute</h2>
+
+                    <div class="code">
+                        <pre><code>[OldEnough(ErrorMessage = "Innflytter må være minst 16 år gammel")]
+public DateTime InnflytterFodselsdato { get; set; }</code></pre>
+                        <pre><hr/></pre>
+                        <pre><code>var d = Convert.ToDateTime(value);
+return d <= MaxDate;</code></pre>
+                        <pre><hr/></pre>
+                        <pre><code>var rule  = new ModelClientValidationRule
+    {
+        ValidationType = "oldenough",
+        ErrorMessage = ErrorMessage
+    };
+rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
+                        <pre><hr/></pre>
+                        <pre><code>function(value) {
+    if(!value) return true;
+    if(!maksdato) return true;
+    f(!moment(value, "DD-MM-YYYY").isValid()) return true;
+    return moment(maksdato, "DD-MM-YYYY").isAfter(moment(value));
+};</code></pre>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+        <script src="./lib/js/head.min.js"></script>
+        <script src="./js/reveal.min.js"></script>
+        <script>
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; }},
+                    { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+                ]
+            });
+        </script>
+    </body>
+</html>
