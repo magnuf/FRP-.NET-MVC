@@ -96,17 +96,17 @@
                     oldEnoughvalid = oldEnoughvalid.skip(1).debounce(500);
 
                     if(requiredText) {
-                        var requiredfeltnavn = input[0].name + "_feil_required";
+                        var requiredfeltnavn = input[0].id + "_feil_required";
                         that.settInnError(input, requiredfeltnavn, requiredText);
                         boolvalid.assign(that.$("#"+requiredfeltnavn), "toggleClass", "skjult");
                     }
                     if(regex){
-                        var regexfeltnavn = input[0].name + "_feil_regex";
+                        var regexfeltnavn = input[0].id + "_feil_regex";
                         that.settInnError(input, regexfeltnavn, regexText);
                         boolvalid.not().or(regexvalid).assign(that.$("#"+regexfeltnavn), "toggleClass", "skjult");
                     }
                     if(oldEnoughText) {
-                        var oldEnoughfeltnavn = input[0].name + "_feil_oldenough";
+                        var oldEnoughfeltnavn = input[0].id + "_feil_oldenough";
                         that.settInnError(input, oldEnoughfeltnavn, oldEnoughText);
                         oldEnoughvalid.assign(that.$("#"+oldEnoughfeltnavn), "toggleClass", "skjult");
                     }
@@ -125,10 +125,8 @@
                 var validFuncs = settOppFelter(inputFelter);
 
                 var allValid = settSammenValidates(validFuncs);
-                allValid.not().assign($("input[type=submit]"), "toggleClass", "notgood");
-                allValid.not().assign($("input[type=submit]"), "attr", "disabled");
-
-                $("button").attr("disabled", "disabled");
+                allValid.not().assign($(inputFelter.last()), "toggleClass", "notgood");
+                allValid.not().assign($(inputFelter.last()), "attr", "disabled");
             };
         </script>
     </head>
@@ -171,15 +169,15 @@ public string Poststed { get; set; }</code></pre>
                 <section>
                     <h2>HTMLen</h2>
                     <div class="code">
-                        <pre class="fragment" data-fragment-index="1"><code><input name="Navn"></code></pre>
-                        <pre class="fragment" data-fragment-index="2"><code><input data-val-required="Adresse mangler" name="Adresse"></code></pre>
+                        <pre class="fragment" data-fragment-index="1"><code><input id="Navn"></code></pre>
+                        <pre class="fragment" data-fragment-index="2"><code><input data-val-required="Adresse mangler" id="Adresse"></code></pre>
                         <pre class="fragment" data-fragment-index="3"><code>&lt;input data-val-regex="Sikker på at dette er rett postnummer?"
 data-val-regex-pattern="^\d{4}$" data-val-required="Postnummer mangler"
-name="Postnummer"></code></pre>
+id="Postnummer"></code></pre>
                         <pre class="fragment" data-fragment-index="4"><code>&lt;input
 data-val-regex="Tror det er noe feil med poststedet du har oppgitt"
 data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler"
-name="Poststed"></code></pre>
+id="Poststed"></code></pre>
                     </div>
                 </section>
 
@@ -193,18 +191,34 @@ var regex = input.attr("data-val-regex-pattern");
 var regexText = input.attr("data-val-regex");</code></pre>
                     </section>
                     <section>
-                        <h2>Bestem om valideringa er oppfylt</h2>
+                        <h2>Valideringsfunksjoner</h2>
+                        <h3 class="fragment" data-fragment-index="1">Required</h3>
                         <pre class="fragment" data-fragment-index="1"><code>function(value) {
     if(requiredText){
         return !!value
     }
     return true;
 }</code></pre>
+                        <h3 class="fragment" data-fragment-index="2">Regex</h3>
                         <pre class="fragment" data-fragment-index="2"><code>function(value) {
     if(!value) return true;
     if(!pattern) return true;
     return new RegExp(pattern, "i").test(value);
 };</code></pre>
+                    </section>
+
+                    <section>
+                        <h2>Sett opp validering</h2>
+                        <pre class="fragment" data-fragment-index="1"><code>var property = DoBaconMagic(input);</code></pre>
+                        <pre class="fragment" data-fragment-index="2"><code>var boolvalid = property.map(requiredFunc);
+var regexvalid = property.map(regexFunc(regex));</code></pre>
+                        <pre class="fragment" data-fragment-index="3"><code>boolvalid.assign($("#"+input[0].id + "_feil_required"), "toggleClass", "skjult");</code></pre>
+                        <pre class="fragment" data-fragment-index="4"><code>boolvalid.not().or(regexvalid)
+.assign($("#"+input[0].id + "_feil_regex"), "toggleClass", "skjult");</code></pre>
+                        <pre class="fragment" data-fragment-index="5"><code>validFunksjoner.push(boolvalid);
+validFunksjoner.push(regexvalid);</code></pre>
+                        <pre class="fragment" data-fragment-index="6"><code>var allValid = settSammenValidates(validFuncs);
+allValid.not().assign($("input[type=submit]"), "attr", "disabled");</code></pre>
                     </section>
                 </section>
 
@@ -219,7 +233,7 @@ var regexText = input.attr("data-val-regex");</code></pre>
                     <label for="Poststed">Poststed</label>
                     <input data-val="true" data-val-regex="Tror det er noe feil med poststedet du har oppgitt" data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler" id="Poststed" name="Poststed" type="text"><br/>
                     <input type="submit" value="Alt er godkjent"/><br/>
-                    <button onclick="run($('.eksempel1 input').filter(filterFunction));">Slå på validering</button><br/>
+                    <button onclick="run($('.eksempel1 input'));">Slå på validering</button><br/>
                 </section>
 
                 <section>
@@ -252,7 +266,7 @@ rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
                     <label for="InnflytterFodselsdato">Fødselsdato</label>
                     <input value="" data-val-oldenough="Innflytter må være minst 16 år gammel" data-val-oldenough-maxdate="04.12.1997" name="InnflytterFodselsdato" type="text"><br/>
                     <input type="submit" value="Alt er godkjent"/><br/>
-                    <button onclick="run($('.eksempel2 input').filter(filterFunction));">Slå på validering</button>
+                    <button onclick="run($('.eksempel2 input'));">Slå på validering</button>
                 </section>
 
                 <section>
