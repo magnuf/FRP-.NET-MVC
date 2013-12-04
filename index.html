@@ -268,33 +268,6 @@ rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
                     <input type="submit" value="Alt er godkjent"/><br/>
                     <button onclick="run($('.eksempel2 input'));">Slå på validering</button>
                 </section>
-
-                <section>
-                    <h2>Custom attribute</h2>
-
-                    <div class="code">
-                        <pre><code>[OldEnough(ErrorMessage = "Innflytter må være minst 16 år gammel")]
-public DateTime InnflytterFodselsdato { get; set; }</code></pre>
-                        <pre><hr/></pre>
-                        <pre><code>var d = Convert.ToDateTime(value);
-return d <= MaxDate;</code></pre>
-                        <pre><hr/></pre>
-                        <pre><code>var rule  = new ModelClientValidationRule
-    {
-        ValidationType = "oldenough",
-        ErrorMessage = ErrorMessage
-    };
-rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
-                        <pre><hr/></pre>
-                        <pre><code>function(value) {
-    if(!value) return true;
-    if(!maksdato) return true;
-    f(!moment(value, "DD-MM-YYYY").isValid()) return true;
-    return moment(maksdato, "DD-MM-YYYY").isAfter(moment(value));
-};</code></pre>
-                    </div>
-                </section>
-
             </div>
         </div>
         <script src="./lib/js/head.min.js"></script>
