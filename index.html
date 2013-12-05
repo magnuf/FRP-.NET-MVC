@@ -142,14 +142,6 @@
                 </section>
 
                 <section>
-                    <h2>Agenda</h2>
-                    <ol>
-                        <li class="fragment">Teoretisk introduksjon</li>
-                        <li class="fragment">FRP i front-end</li>
-                    </ol>
-                </section>
-
-                <section>
                     <h2>Modellen din</h2>
                     <div class="code">
                             <pre class="fragment" data-fragment-index="1"><code>public string Navn { get; set; }</code></pre>
@@ -170,14 +162,13 @@ public string Poststed { get; set; }</code></pre>
                     <h2>HTMLen</h2>
                     <div class="code">
                         <pre class="fragment" data-fragment-index="1"><code><input id="Navn"></code></pre>
-                        <pre class="fragment" data-fragment-index="2"><code><input data-val-required="Adresse mangler" id="Adresse"></code></pre>
-                        <pre class="fragment" data-fragment-index="3"><code>&lt;input data-val-regex="Sikker på at dette er rett postnummer?"
-data-val-regex-pattern="^\d{4}$" data-val-required="Postnummer mangler"
-id="Postnummer"></code></pre>
-                        <pre class="fragment" data-fragment-index="4"><code>&lt;input
+                        <pre class="fragment" data-fragment-index="2"><code><input id="Adresse" data-val-required="Adresse mangler"></code></pre>
+                        <pre class="fragment" data-fragment-index="3"><code>&lt;input id="Postnummer"
+data-val-regex="Sikker på at dette er rett postnummer?"
+data-val-regex-pattern="^\d{4}$" data-val-required="Postnummer mangler"></code></pre>
+                        <pre class="fragment" data-fragment-index="4"><code>&lt;input id="Poststed"
 data-val-regex="Tror det er noe feil med poststedet du har oppgitt"
-data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler"
-id="Poststed"></code></pre>
+data-val-regex-pattern="^[A-Za-zÆØÅæøå\s]+$" data-val-required="Poststed mangler"></code></pre>
                     </div>
                 </section>
 
@@ -264,7 +255,7 @@ rule.ValidationParameters["maxdate"] = MaxDate.TilNorskDato();</code></pre>
 
                 <section class="eksempel2">
                     <label for="InnflytterFodselsdato">Fødselsdato</label>
-                    <input value="" data-val-oldenough="Innflytter må være minst 16 år gammel" data-val-oldenough-maxdate="04.12.1997" name="InnflytterFodselsdato" type="text"><br/>
+                    <input value="" data-val-oldenough="Innflytter må være minst 16 år gammel" data-val-oldenough-maxdate="04.12.1997" id="InnflytterFodselsdato" type="text"><br/>
                     <input type="submit" value="Alt er godkjent"/><br/>
                     <button onclick="run($('.eksempel2 input'));">Slå på validering</button>
                 </section>
